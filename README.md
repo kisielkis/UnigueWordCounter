@@ -28,6 +28,14 @@ the program outputs: 4
 
 ---
 
+## 🛠️ Requirements
+
+To build and run the project, you need the following:
+
+- **C++ compiler** (supporting C++17, e.g., `g++` or `clang++`)
+- **pthread library** (for multithreading)
+- **Google Test (gtest)** for running unit tests
+
 ## 🛠️ Build
 make
 

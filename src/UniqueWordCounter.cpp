@@ -83,7 +83,7 @@ void UniqueWordCounter::unmapFile() {
 void UniqueWordCounter::processChunk(const char* start, const char* end) {
     std::string word;
     for (const char* it = start; it < end; ++it) {
-        if (*it == ' ') {
+        if (*it == ' ' || *it == '\n' || *it == '\r') {
             if (!word.empty()) {
                 std::lock_guard<std::mutex> lock(mtx_);
                 unique_words_.insert(word);

@@ -23,5 +23,5 @@ int main(int argc, char* argv[]) {
     size_t unique_word_count = counter.countUniqueWords();
     std::cout << unique_word_count << std::endl;
 
-    return 0;
+    return unique_word_count;
 }

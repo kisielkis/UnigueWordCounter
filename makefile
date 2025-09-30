@@ -9,7 +9,7 @@ SOURCES = src/main.cpp \
 		  src/UniqueWordCounter.cpp
 
 TEST_SOURCES = test/UniqueWordCounterTest.cpp \
-			   src/UniqueWordCounter.cpp
+			   test/IntegrationTest.cpp 
 
 HEADERS = include/UniqueWordCounter.h
 

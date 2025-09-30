@@ -30,7 +30,7 @@ $(TARGET): $(OBJECTS)
 
 test: $(TEST_TARGET)
 
-runTest: $(TEST_TARGET)
+runTest: $(TEST_TARGET) $(TARGET)
 	./$(TEST_TARGET)
 
 $(TEST_TARGET): $(TEST_OBJECTS)

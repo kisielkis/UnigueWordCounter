@@ -2,9 +2,9 @@
 
 #include <iostream>
 #include <fcntl.h>
-#include <unistd.h>
 #include <sys/mman.h>
 #include <sys/stat.h>
+#include <unistd.h>
 
 UniqueWordCounter::UniqueWordCounter(const std::string& filename) : filename_(filename) {}
 
@@ -40,11 +40,14 @@ size_t UniqueWordCounter::countUniqueWords() {
                 ++end;
             }
         }
-        threads_.emplace_back(&UniqueWordCounter::processChunk, this, start, end);
+        auto mySet = std::make_shared<std::unordered_set<std::string>>();
+        std::thread t(&UniqueWordCounter::processChunk, this, start, end, mySet);
+        threadsAndCount.emplace_back(std::make_pair(std::move(t), mySet));
     }
 
-    for (auto& thread : threads_) {
-        thread.join();
+    for (auto& thread : threadsAndCount) {
+        thread.first.join();
+        unique_words_.merge(*thread.second);
     }
 
     unmapFile();
@@ -80,13 +83,12 @@ void UniqueWordCounter::unmapFile() {
     }
 }
 
-void UniqueWordCounter::processChunk(const char* start, const char* end) {
+void UniqueWordCounter::processChunk(const char* start, const char* end, std::shared_ptr<std::unordered_set<std::string>> result) {
     std::string word;
     for (const char* it = start; it < end; ++it) {
         if (*it == ' ' || *it == '\n' || *it == '\r') {
             if (!word.empty()) {
-                std::lock_guard<std::mutex> lock(mtx_);
-                unique_words_.insert(word);
+                result->insert(word);
                 word.clear();
             }
         } else {
@@ -94,7 +96,6 @@ void UniqueWordCounter::processChunk(const char* start, const char* end) {
         }
     }
     if (!word.empty()) {
-        std::lock_guard<std::mutex> lock(mtx_);
-        unique_words_.insert(word);
+        result->insert(word);
     }
 }

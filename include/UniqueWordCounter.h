@@ -27,6 +27,7 @@ public:
      * @param filename The name of the file to process.
      */
     UniqueWordCounter(const std::string& filename);
+    ~UniqueWordCounter();
 
     /**
      * @brief Counts the number of unique words in the file.

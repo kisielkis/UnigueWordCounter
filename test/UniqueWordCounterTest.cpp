@@ -54,21 +54,6 @@ TEST(UniqueWordCounterTest, HandlesLargeNumberOfUniqueWords) {
     EXPECT_EQ(countUniqueWordsInString(input), 100000);
 }
 
-// TEST(UniqueWordCounterTest, HandlesLargeMixedInput) {
-//     std::string input;
-//     for (int i = 0; i < 5000000; ++i) {
-//         input += "repeat ";
-//     }
-//     for (int i = 0; i < 9000000; ++i) {
-//         input += "unique" + std::to_string(i) + " ";
-//     }
-//     EXPECT_EQ(countUniqueWordsInString(input), 9000001);
-// }
-
-// ---------------------------------------------------------------------------
-// Tests for the UniqueWordCounter class itself (Bug 4 fix)
-// ---------------------------------------------------------------------------
-
 class UniqueWordCounterClassTest : public ::testing::Test {
 protected:
     char tmpPath[64] = "/tmp/uwc_test_XXXXXX";
@@ -143,6 +128,61 @@ TEST_F(UniqueWordCounterClassTest, LargeFileUniqueWords) {
     for (int i = 0; i < 10000; ++i) content += "word" + std::to_string(i) + " ";
     writeFile(content);
     EXPECT_EQ(count(), 10000u);
+}
+
+TEST_F(UniqueWordCounterClassTest, LeadingAndTrailingSpaces) {
+    writeFile("  hello world  ");
+    EXPECT_EQ(count(), 2u);
+}
+
+TEST_F(UniqueWordCounterClassTest, OnlyWhitespace) {
+    writeFile("   \n  \r\n  ");
+    EXPECT_EQ(count(), 0u);
+}
+
+TEST_F(UniqueWordCounterClassTest, MultipleConsecutiveSpaces) {
+    writeFile("a  b  c");
+    EXPECT_EQ(count(), 3u);
+}
+
+// Verifies that a file ending mid-word (no trailing delimiter) is counted correctly.
+TEST_F(UniqueWordCounterClassTest, FileEndsWithoutDelimiter) {
+    writeFile("hello world");  // no trailing space or newline
+    EXPECT_EQ(count(), 2u);
+}
+
+// A single word long enough to span all chunk boundaries regardless of hardware_concurrency().
+// Exercises the chunk-boundary logic and post-loop flush.
+TEST_F(UniqueWordCounterClassTest, SingleWordSpanningAllChunks) {
+    std::string content(100000, 'z');
+    writeFile(content);
+    EXPECT_EQ(count(), 1u);
+}
+
+// Words of varying lengths to stress-test boundary alignment across chunks.
+TEST_F(UniqueWordCounterClassTest, MixedWordLengthsAcrossChunks) {
+    std::string content;
+    // Alternate short and long words so boundaries land mid-word frequently.
+    for (int i = 0; i < 500; ++i) {
+        content += "a ";
+        content += std::string(200, 'b') + " ";
+    }
+    writeFile(content);
+    EXPECT_EQ(count(), 2u);
+}
+
+// Ensures countUniqueWords() can be called multiple times and resets state correctly.
+TEST_F(UniqueWordCounterClassTest, MultipleCallsSameInstance) {
+    writeFile("hello world hello");
+    UniqueWordCounter counter(tmpPath);
+    EXPECT_EQ(counter.countUniqueWords(), 2u);
+    EXPECT_EQ(counter.countUniqueWords(), 2u);  // must return same result
+}
+
+// Words separated by \r alone (old Mac line ending).
+TEST_F(UniqueWordCounterClassTest, WordsSeparatedByCR) {
+    writeFile("foo\rbar\rfoo");
+    EXPECT_EQ(count(), 2u);
 }
 
 int main(int argc, char **argv) {

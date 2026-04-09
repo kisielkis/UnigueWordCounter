@@ -8,7 +8,20 @@
 
 UniqueWordCounter::UniqueWordCounter(const std::string& filename) : filename_(filename) {}
 
+UniqueWordCounter::~UniqueWordCounter() {
+    for (auto& [t, s] : threadsAndCount) {
+        if (t.joinable()) t.join();
+    }
+    unmapFile();
+}
+
 size_t UniqueWordCounter::countUniqueWords() {
+    for (auto& [t, s] : threadsAndCount) {
+        if (t.joinable()) t.join();
+    }
+    threadsAndCount.clear();
+    unique_words_.clear();
+
     if (!mapFile()) {
         std::cerr << "Error mapping file" << std::endl;
         return 0;
@@ -92,6 +105,7 @@ bool UniqueWordCounter::mapFile() {
 void UniqueWordCounter::unmapFile() {
     if (file_content_) {
         munmap(const_cast<char*>(file_content_), file_size_);
+        file_content_ = nullptr;
     }
 }
 

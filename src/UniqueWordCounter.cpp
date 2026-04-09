@@ -14,6 +14,10 @@ size_t UniqueWordCounter::countUniqueWords() {
         return 0;
     }
 
+    if (file_size_ == 0) {
+        return 0;
+    }
+
     size_t num_threads = std::thread::hardware_concurrency();
     if (num_threads == 0) {
         num_threads = 1;
@@ -69,6 +73,12 @@ bool UniqueWordCounter::mapFile() {
     }
 
     file_size_ = sb.st_size;
+
+    if (file_size_ == 0) {
+        close(fd);
+        return true;
+    }
+
     /*
      * alternatively: buffered ifstream or boost::iostreams::mapped_file_source
      */

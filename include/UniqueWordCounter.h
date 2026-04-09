@@ -9,7 +9,6 @@
 #define UNIQUE_WORD_COUNTER_H
 
 #include <memory>
-#include <mutex>
 #include <string>
 #include <thread>
 #include <unordered_set>
@@ -39,7 +38,7 @@ private:
     std::string filename_;
     const char* file_content_ = nullptr;
     size_t file_size_ = 0;
-    std::vector<std::pair<std::thread, std::shared_ptr<std::unordered_set<std::string>>>> threadsAndCount;
+    std::vector<std::pair<std::thread, std::shared_ptr<std::unordered_set<std::string>>>> threads_and_count_;
 
     std::unordered_set<std::string> unique_words_;
 

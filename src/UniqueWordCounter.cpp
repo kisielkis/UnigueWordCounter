@@ -9,17 +9,17 @@
 UniqueWordCounter::UniqueWordCounter(const std::string& filename) : filename_(filename) {}
 
 UniqueWordCounter::~UniqueWordCounter() {
-    for (auto& [t, s] : threadsAndCount) {
+    for (auto& [t, s] : threads_and_count_) {
         if (t.joinable()) t.join();
     }
     unmapFile();
 }
 
 size_t UniqueWordCounter::countUniqueWords() {
-    for (auto& [t, s] : threadsAndCount) {
+    for (auto& [t, s] : threads_and_count_) {
         if (t.joinable()) t.join();
     }
-    threadsAndCount.clear();
+    threads_and_count_.clear();
     unique_words_.clear();
 
     if (!mapFile()) {
@@ -61,10 +61,10 @@ size_t UniqueWordCounter::countUniqueWords() {
         }
         auto mySet = std::make_shared<std::unordered_set<std::string>>();
         std::thread t(&UniqueWordCounter::processChunk, this, start, end, mySet);
-        threadsAndCount.emplace_back(std::make_pair(std::move(t), mySet));
+        threads_and_count_.emplace_back(std::make_pair(std::move(t), mySet));
     }
 
-    for (auto& thread : threadsAndCount) {
+    for (auto& thread : threads_and_count_) {
         thread.first.join();
         unique_words_.merge(*thread.second);
     }

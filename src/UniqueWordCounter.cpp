@@ -96,18 +96,16 @@ void UniqueWordCounter::unmapFile() {
 }
 
 void UniqueWordCounter::processChunk(const char* start, const char* end, std::shared_ptr<std::unordered_set<std::string>> result) {
-    std::string word;
-    for (const char* it = start; it < end; ++it) {
-        if (*it == ' ' || *it == '\n' || *it == '\r') {
-            if (!word.empty()) {
-                result->insert(word);
-                word.clear();
+    const char* word_start = nullptr;
+    for (const char* it = start; it <= end; ++it) {
+        const bool delim = (it == end) || *it == ' ' || *it == '\n' || *it == '\r';
+        if (delim) {
+            if (word_start) {
+                result->emplace(word_start, static_cast<size_t>(it - word_start));
+                word_start = nullptr;
             }
-        } else {
-            word += *it;
+        } else if (!word_start) {
+            word_start = it;
         }
-    }
-    if (!word.empty()) {
-        result->insert(word);
     }
 }

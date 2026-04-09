@@ -40,4 +40,4 @@ $(TEST_TARGET): $(TEST_OBJECTS)
 clean:
 	rm -f $(TARGET) $(TEST_TARGET) $(OBJECTS) $(TEST_OBJECTS)
 
-.PHONY: all clean test
+.PHONY: all clean test runTest

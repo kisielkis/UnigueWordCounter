@@ -37,15 +37,21 @@ size_t UniqueWordCounter::countUniqueWords() {
     }
     size_t chunk_size = file_size_ / num_threads;
 
+    threads_and_count_.reserve(num_threads);
+
     for (size_t iTer = 0; iTer < num_threads; ++iTer) {
         const char* start = file_content_ + iTer * chunk_size;
         const char* end = (iTer == num_threads - 1) ? file_content_ + file_size_ : start + chunk_size;
 
         auto isDelimiter = [](char c) { return c == ' ' || c == '\n' || c == '\r'; };
 
-        // Adjust start to the beginning of a word
+        // Adjust start: skip past any partial word already covered by the previous chunk
         if (iTer != 0) {
             while (start < file_content_ + file_size_ && !isDelimiter(*start)) {
+                ++start;
+            }
+
+            while (start < file_content_ + file_size_ && isDelimiter(*start)) {
                 ++start;
             }
             if (start >= file_content_ + file_size_) {
@@ -59,15 +65,22 @@ size_t UniqueWordCounter::countUniqueWords() {
                 ++end;
             }
         }
-        auto mySet = std::make_shared<std::unordered_set<std::string>>();
-        std::thread t(&UniqueWordCounter::processChunk, this, start, end, mySet);
-        threads_and_count_.emplace_back(std::make_pair(std::move(t), mySet));
+
+        threads_and_count_.emplace_back();
+        threads_and_count_.back().second.reserve(chunk_size / 5);
+        threads_and_count_.back().first = std::thread(
+            &UniqueWordCounter::processChunk, this, start, end,
+            &threads_and_count_.back().second 
+        );
     }
 
-    for (auto& thread : threads_and_count_) {
-        thread.first.join();
-        unique_words_.merge(*thread.second);
-    }
+    for (auto& [t, s] : threads_and_count_) t.join();
+
+    size_t total_estimate = 0;
+    for (auto& [t, s] : threads_and_count_) total_estimate += s.size();
+    unique_words_.reserve(total_estimate);
+
+    for (auto& [t, s] : threads_and_count_) unique_words_.merge(s);
 
     unmapFile();
     return unique_words_.size();
@@ -97,23 +110,22 @@ bool UniqueWordCounter::mapFile() {
     /*
      * alternatively: buffered ifstream or boost::iostreams::mapped_file_source
      */
-    file_content_ = static_cast<const char*>(mmap(nullptr, file_size_, PROT_READ, MAP_PRIVATE, fd, 0));
+    file_content_ = static_cast<char*>(mmap(nullptr, file_size_, PROT_READ, MAP_PRIVATE, fd, 0));
     close(fd);
     return file_content_ != MAP_FAILED;
 }
 
 void UniqueWordCounter::unmapFile() {
     if (file_content_) {
-        munmap(const_cast<char*>(file_content_), file_size_);
+        munmap(file_content_, file_size_);
         file_content_ = nullptr;
     }
 }
 
-void UniqueWordCounter::processChunk(const char* start, const char* end, std::shared_ptr<std::unordered_set<std::string>> result) {
+void UniqueWordCounter::processChunk(const char* start, const char* end, std::unordered_set<std::string>* result) {
     const char* word_start = nullptr;
-    for (const char* it = start; it <= end; ++it) {
-        const bool delim = (it == end) || *it == ' ' || *it == '\n' || *it == '\r';
-        if (delim) {
+    for (const char* it = start; it < end; ++it) {
+        if (*it == ' ' || *it == '\n' || *it == '\r') {
             if (word_start) {
                 result->emplace(word_start, static_cast<size_t>(it - word_start));
                 word_start = nullptr;
@@ -121,5 +133,9 @@ void UniqueWordCounter::processChunk(const char* start, const char* end, std::sh
         } else if (!word_start) {
             word_start = it;
         }
+    }
+    // Flush last word if chunk doesn't end with a delimiter
+    if (word_start) {
+        result->emplace(word_start, static_cast<size_t>(end - word_start));
     }
 }

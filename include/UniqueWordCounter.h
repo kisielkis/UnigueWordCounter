@@ -8,7 +8,6 @@
 #ifndef UNIQUE_WORD_COUNTER_H
 #define UNIQUE_WORD_COUNTER_H
 
-#include <memory>
 #include <string>
 #include <thread>
 #include <unordered_set>
@@ -36,9 +35,9 @@ public:
 
 private:
     std::string filename_;
-    const char* file_content_ = nullptr;
+    char* file_content_ = nullptr;
     size_t file_size_ = 0;
-    std::vector<std::pair<std::thread, std::shared_ptr<std::unordered_set<std::string>>>> threads_and_count_;
+    std::vector<std::pair<std::thread, std::unordered_set<std::string>>> threads_and_count_; 
 
     std::unordered_set<std::string> unique_words_;
 
@@ -58,7 +57,7 @@ private:
      * @param start Pointer to the start of the chunk.
      * @param end Pointer to the end of the chunk.
      */
-    void processChunk(const char* start, const char* end, std::shared_ptr<std::unordered_set<std::string>> result);
+    void processChunk(const char* start, const char* end, std::unordered_set<std::string>* result);
 };  // end class UniqueWordCounter
 
 #endif // end UNIQUE_WORD_COUNTER_H

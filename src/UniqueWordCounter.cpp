@@ -28,9 +28,11 @@ size_t UniqueWordCounter::countUniqueWords() {
         const char* start = file_content_ + iTer * chunk_size;
         const char* end = (iTer == num_threads - 1) ? file_content_ + file_size_ : start + chunk_size;
 
+        auto isDelimiter = [](char c) { return c == ' ' || c == '\n' || c == '\r'; };
+
         // Adjust start to the beginning of a word
         if (iTer != 0) {
-            while (start < file_content_ + file_size_ && *start != ' ') {
+            while (start < file_content_ + file_size_ && !isDelimiter(*start)) {
                 ++start;
             }
             if (start >= file_content_ + file_size_) {
@@ -40,7 +42,7 @@ size_t UniqueWordCounter::countUniqueWords() {
 
         // Ensure we don't split a word between chunks
         if (iTer != num_threads - 1) {
-            while (end < file_content_ + file_size_ && *end != ' ') {
+            while (end < file_content_ + file_size_ && !isDelimiter(*end)) {
                 ++end;
             }
         }
